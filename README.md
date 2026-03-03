@@ -97,33 +97,6 @@ Topics covered:
 
 ---
 
-# How to Open Files from Repository
-
-After cloning the repository:
-
-```bash
-git clone <your-repository-url>
-cd Docker
-```
-
-Open any file using:
-
-```bash
-cat Basic-Docker-Commands.md
-cat Volumes.md
-cat Networking.md
-cat Compose.md
-cat Swarm.md
-```
-
-Or open in VS Code:
-
-```bash
-code .
-```
-
----
-
 # Conclusion
 
 This repository provides structured and practical documentation for mastering Docker fundamentals and orchestration concepts.
