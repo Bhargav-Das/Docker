@@ -14,37 +14,16 @@ The content is organized topic-wise with separate markdown files for each concep
 
 ---
 
-# Overview
-
-This repository serves as a comprehensive practical lab documentation for learning Docker and containerization concepts in a structured manner.
-
-It covers:
-
-- Docker fundamentals  
-- Storage management  
-- Networking  
-- Multi-container deployments  
-- Container orchestration  
-
-Each topic includes:
-
-- Concept explanations  
-- Command usage  
-- Real execution outputs  
-- Troubleshooting cases  
-- Best practices  
-
----
-
 # Repository Structure
 
 ## Docker Fundamentals
 
 Core Docker commands used to manage containers and images.
 
-- [Docker Basic Commands](./Basic%20Docker%20Commands.md)
+- [Docker Basic Commands](./Basic-Docker-Commands.md)
 
 Topics covered:
+
 - Image management  
 - Container lifecycle  
 - Logs and monitoring  
@@ -59,12 +38,12 @@ Persistent storage options in Docker.
 - [Docker Volumes](./Volumes.md)
 
 Topics covered:
+
 - Named volumes  
 - Anonymous volumes  
 - Bind mounts  
 - tmpfs mounts  
 - Volume backup & restore  
-- Storage comparison  
 
 ---
 
@@ -75,8 +54,9 @@ Container communication and isolation mechanisms.
 - [Docker Networking](./Networking.md)
 
 Topics covered:
+
 - Bridge network  
-- Custom networks  
+- Custom bridge networks  
 - Host mode  
 - Network isolation  
 - Overlay networks  
@@ -91,12 +71,12 @@ Multi-container application deployment.
 - [Docker Compose](./Compose.md)
 
 Topics covered:
+
 - docker run vs docker compose  
 - Service configuration  
 - Scaling  
 - Port conflicts  
 - Environment variables  
-- Health checks  
 
 ---
 
@@ -107,7 +87,8 @@ Container orchestration and clustering.
 - [Docker Swarm](./Swarm.md)
 
 Topics covered:
-- Manager and worker nodes  
+
+- Manager & worker nodes  
 - Swarm initialization  
 - Service deployment  
 - Scaling  
@@ -116,63 +97,43 @@ Topics covered:
 
 ---
 
-# Learning Outcomes
+# How to Open Files from Repository
 
-After completing this lab, you will understand:
+After cloning the repository:
 
-- How Docker works internally  
-- How to manage container lifecycle  
-- How to implement persistent storage  
-- How networking isolation works  
-- How to deploy multi-container applications  
-- How to scale applications using Swarm  
+```bash
+git clone <your-repository-url>
+cd Docker
+```
 
----
+Open any file using:
 
-# Tools Used
+```bash
+cat Basic-Docker-Commands.md
+cat Volumes.md
+cat Networking.md
+cat Compose.md
+cat Swarm.md
+```
 
-- Docker Engine 29.2.1  
-- Ubuntu (WSL2)  
-- Docker Compose  
-- Docker Swarm  
+Or open in VS Code:
 
----
-
-# Practical Approach
-
-All commands in this repository were executed in a real environment.  
-Outputs included are actual execution results for better understanding.
-
-This ensures:
-
-- Hands-on clarity  
-- Real troubleshooting exposure  
-- Practical DevOps workflow experience  
-
----
-
-# Best Practices Followed
-
-- Use of named volumes for persistence  
-- Custom networks for isolation  
-- Avoid using `latest` in production examples  
-- Proper scaling methods  
-- Rolling updates in Swarm  
-- Clean teardown of services  
+```bash
+code .
+```
 
 ---
 
 # Conclusion
 
-This repository provides a structured and practical approach to learning Docker and DevOps fundamentals.
+This repository provides structured and practical documentation for mastering Docker fundamentals and orchestration concepts.
 
 It serves as:
 
-- A lab manual  
-- A revision guide  
-- A practical reference  
-- A DevOps portfolio project  
+- Lab manual  
+- Revision material  
+- DevOps practice documentation  
+- Portfolio-ready project  
 
 ---
-
 End of Repository Documentation
