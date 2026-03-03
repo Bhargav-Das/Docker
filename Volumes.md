@@ -7,9 +7,36 @@ title: Docker Volumes
 
 ---
 
-## Task 1: Create a Volume
+# Overview
 
-### Method 1 – Explicit Creation
+Docker containers are ephemeral by default. When a container is removed, its internal filesystem is deleted.
+
+To persist data, Docker provides three main storage mechanisms:
+
+- **Volumes**
+- **Bind Mounts**
+- **tmpfs Mounts**
+
+Each serves a different purpose depending on performance, security, and persistence requirements.
+
+---
+
+# Docker Storage Architecture
+
+When a container writes data:
+
+- Without volume → stored in writable container layer
+- With volume → stored in Docker-managed directory
+- With bind mount → stored directly on host path
+- With tmpfs → stored in memory (RAM)
+
+Container writable layer is removed when container is deleted. Volumes prevent this data loss.
+
+---
+
+# Task 1: Create a Volume
+
+## Method 1 – Explicit Creation
 
 ```bash
 docker volume create myvolume
@@ -23,7 +50,7 @@ myvolume
 
 ---
 
-### Verify
+## Verify Volume
 
 ```bash
 docker volume ls
@@ -38,9 +65,24 @@ local     myvolume
 
 ---
 
-## Task 2: Use Volume in Container
+# Named vs Anonymous Volumes
 
-### Using -v flag
+- **Named Volume** → `myvolume`
+- **Anonymous Volume** → Auto-generated name
+
+Anonymous example:
+
+```bash
+docker run -v /data nginx
+```
+
+Docker creates a random volume name automatically.
+
+---
+
+# Task 2: Use Volume in Container
+
+## Using -v Flag
 
 ```bash
 docker run -d \
@@ -49,32 +91,11 @@ docker run -d \
   mysql
 ```
 
-**Output:**
-
-```bash
-Unable to find image 'mysql:latest' locally
-latest: Pulling from library/mysql
-357926362d31: Pull complete
-4a629f1008ff: Pull complete
-74a8e4bbd9fe: Pull complete
-f3702ac323ca: Pull complete
-658630c937c6: Pull complete
-c89a19cdad3b: Pull complete
-00af5f73db53: Pull complete
-ab1b8ea72826: Pull complete
-8314ff001dec: Pull complete
-61941d436e88: Pull complete
-b222ef59b124: Download complete
-1dc8eadaef55: Download complete
-Digest: sha256:e5dc14f6e01c3e577e669337d2855c6d1561b30d8ef2c592e63e4e8a9a52650a
-Status: Downloaded newer image for mysql:latest
-21b262c732e37f3f29e4ebaf9d9559637b29129224cafea65cc5fa84ed5a7231
-
-```
+If image not present, Docker pulls it automatically.
 
 ---
 
-### Using --mount flag (Recommended Modern Syntax)
+## Using --mount Flag (Recommended)
 
 ```bash
 docker run -d \
@@ -83,15 +104,23 @@ docker run -d \
   mysql
 ```
 
-**Output:**
+### Why Prefer --mount?
 
-```bash
-88acfe876c397a41d2bbbfa239be6d5c5efe7be3997679d83f291502eb2d267f
-```
+- Clear syntax
+- More configurable
+- Required for advanced options
 
 ---
 
-## Task 3: Inspect Volume
+# Volume Lifecycle
+
+- Volume exists independently of container
+- Removing container does NOT remove volume
+- Must remove volume manually
+
+---
+
+# Task 3: Inspect Volume
 
 ```bash
 docker volume inspect myvolume
@@ -99,72 +128,81 @@ docker volume inspect myvolume
 
 **Output:**
 
-```bash
+```json
 [
     {
-        "CreatedAt": "2026-03-02T16:17:46Z",
         "Driver": "local",
-        "Labels": null,
         "Mountpoint": "/var/lib/docker/volumes/myvolume/_data",
         "Name": "myvolume",
-        "Options": null,
         "Scope": "local"
     }
 ]
 ```
 
-### Shows:
+### Important Fields
 
-* Mountpoint
-* Driver
-* Metadata
+- Mountpoint → Actual storage path
+- Driver → Storage driver
+- Scope → Local or global
 
 ---
 
-## Task 4: Remove Volume
+# Task 4: Remove Volume
 
 ```bash
 docker volume rm myvolume
 ```
 
-**Output:**
-
-```bash
-myvolume
-```
-
 ---
 
-### Remove unused volumes
+## Remove Unused Volumes
 
 ```bash
 docker volume prune
 ```
 
-**Output:**
+Removes only unused volumes.
+
+---
+
+# Volume Backup and Restore
+
+## Backup Volume
 
 ```bash
-WARNING! This will remove anonymous local volumes not used by at least one container.
-Are you sure you want to continue? [y/N] y
-Total reclaimed space: 0B
+docker run --rm \
+  -v myvolume:/volume \
+  -v $(pwd):/backup \
+  ubuntu \
+  tar czf /backup/backup.tar.gz -C /volume .
+```
+
+## Restore Volume
+
+```bash
+docker run --rm \
+  -v myvolume:/volume \
+  -v $(pwd):/backup \
+  ubuntu \
+  tar xzf /backup/backup.tar.gz -C /volume
 ```
 
 ---
 
-## Volume Use Case
+# Volume Use Cases
 
-### Use Case 1: Database Storage
+## Database Storage
 
-* MySQL
-* PostgreSQL
-* MongoDB
+- MySQL
+- PostgreSQL
+- MongoDB
 
-### Why?
+Why use volume?
 
-* Docker-managed
-* Safe
-* Portable
-* Production-ready
+- Persistent
+- Docker-managed
+- Production-safe
+- Data survives container restart
 
 ---
 
@@ -172,15 +210,13 @@ Total reclaimed space: 0B
 
 ## Concept
 
-Bind mount maps a host directory directly into a container.
+Bind mount maps a specific host directory into container.
 
-Host controls data.
+Host directly controls files.
 
 ---
 
-## Task 1: Create Bind Mount
-
-### Using -v
+## Create Bind Mount (-v)
 
 ```bash
 docker run -d \
@@ -189,28 +225,9 @@ docker run -d \
   nginx
 ```
 
-**Output:**
-
-```bash
-Unable to find image 'nginx:latest' locally
-latest: Pulling from library/nginx
-1ad233904a11: Pull complete
-b47f187216b6: Pull complete
-206356c42440: Pull complete
-df0b66c867e4: Pull complete
-eedda9fd8786: Pull complete
-35ff83c394d6: Pull complete
-17d0911eaf62: Pull complete
-c13150b54a53: Download complete
-0019bbecc572: Download complete
-Digest: sha256:0236ee02dcbce00b9bd83e0f5fbc51069e7e1161bd59d99885b3ae1734f3392e
-Status: Downloaded newer image for nginx:latest
-238974fefc0ad851366b2d8dc4d455f01ab016dbba5872ae5dabe218f56e758a
-```
-
 ---
 
-### Using --mount
+## Using --mount (Recommended)
 
 ```bash
 docker run -d \
@@ -219,47 +236,43 @@ docker run -d \
   nginx
 ```
 
-**Output:**
+---
+
+# Read-Only Bind Mount
 
 ```bash
-27fd8e0eb70638830f2535a39dd1a36c3a2b0d20b675494cf318155c8e77d572
+docker run -d \
+  --mount type=bind,source=/home/prateek/html,target=/usr/share/nginx/html,readonly \
+  nginx
 ```
+
+Prevents container from modifying host files.
 
 ---
 
-## Task 2: Remove Bind Mount
+# Remove Bind Mount
 
-Bind mount is removed when container is removed:
+Bind mount is removed when container is deleted:
 
 ```bash
 docker rm -f nginx-container
 ```
 
-**Output:**
-
-```bash
-nginx-container
-```
-
-No separate delete like volume.
-
 ---
 
-## Bind Mount Use Case
+# Bind Mount Use Cases
 
-### Use Case 1: Development Environment
+## Development Environment
 
-Example:
+- Source code on host
+- Container runs app
+- Instant updates
 
-* Node.js app
-* Source code on host
-* Container runs app
+Benefits:
 
-### Benefits:
-
-* Live code updates
-* No rebuild required
-* Fast development
+- Live reload
+- No rebuild required
+- Faster development workflow
 
 ---
 
@@ -269,13 +282,15 @@ Example:
 
 tmpfs stores data in RAM only.
 
-* No persistence
-* Deleted when container stops
-* Very fast
+Characteristics:
+
+- No persistence
+- High performance
+- Secure (not written to disk)
 
 ---
 
-## Task: Create tmpfs Mount
+## Create tmpfs Mount
 
 ```bash
 docker run -d \
@@ -284,15 +299,9 @@ docker run -d \
   nginx
 ```
 
-**Output:**
-
-```bash
-4bcd2c611b159b204c5816e49df63b20be774eebb3d61df96f72559f919b1503
-```
-
 ---
 
-### Alternative
+## Alternative Syntax
 
 ```bash
 docker run -d \
@@ -300,49 +309,134 @@ docker run -d \
   nginx
 ```
 
-**Output:**
+---
+
+# tmpfs Advanced Options
 
 ```bash
-d324874563c9ffbd786ae4bb4092cb9df027ab7f373d2cc7f88df58dfbde973b
+docker run -d \
+  --mount type=tmpfs,target=/app/cache,tmpfs-size=64m \
+  nginx
 ```
+
+Limits RAM usage to 64MB.
 
 ---
 
-## tmpfs Use Case
+# tmpfs Use Cases
 
-### Use Case 1: Sensitive Temporary Data
-
-Example:
-
-* Encryption keys
-* Session tokens
-* Temporary cache
-
-### Why?
-
-* Not written to disk
-* More secure
-* High speed
+- Encryption keys
+- Session data
+- Temporary cache
+- Sensitive information
 
 ---
 
 # Differences: Volume vs Bind Mount vs tmpfs
 
-| Feature         | Volume           | Bind Mount    | tmpfs     |
-| --------------- | ---------------- | ------------- | --------- |
-| Managed by      | Docker           | Host OS       | Memory    |
-| Location        | Docker directory | Any host path | RAM       |
-| Persistence     | Yes              | Yes           | No        |
-| Performance     | Good             | Good          | Very Fast |
-| Production safe | Yes              | Risky         | Limited   |
-| Dev friendly    | Moderate         | Excellent     | No        |
+| Feature         | Volume           | Bind Mount       | tmpfs        |
+|-----------------|------------------|------------------|-------------|
+| Managed by      | Docker           | Host OS          | Memory      |
+| Storage Location| Docker directory | Host path        | RAM         |
+| Persistence     | Yes              | Yes              | No          |
+| Performance     | Good             | Good             | Very Fast   |
+| Production Safe | Yes              | Risky (depends)  | Limited     |
+| Dev Friendly    | Moderate         | Excellent        | No          |
+| Security        | High             | Depends on host  | Very High   |
 
 ---
 
-## Conclusion
+# Performance Considerations
 
-Docker provides multiple storage options:
+- Volumes → Optimized for container usage
+- Bind mounts → Depends on host filesystem
+- tmpfs → Fastest but volatile
 
-* Volumes for production-safe persistence
-* Bind mounts for development flexibility
-* tmpfs for fast, temporary, and secure data handling
+---
+
+# Security Notes
+
+- Avoid exposing sensitive host directories
+- Use read-only mounts when possible
+- Use tmpfs for secrets
+- Limit mount permissions
+
+---
+
+# Advanced Volume Drivers
+
+List drivers:
+
+```bash
+docker plugin ls
+```
+
+Examples:
+
+- local
+- NFS
+- Cloud storage drivers
+- Distributed storage
+
+---
+
+# Troubleshooting
+
+Check volume path:
+
+```bash
+docker volume inspect myvolume
+```
+
+Check disk usage:
+
+```bash
+docker system df
+```
+
+Restart Docker if mount issues occur:
+
+```bash
+sudo systemctl restart docker
+```
+
+---
+
+# Best Practices
+
+- Use named volumes in production
+- Avoid anonymous volumes in production
+- Use bind mounts only in development
+- Backup volumes regularly
+- Monitor disk usage
+- Use tmpfs for sensitive temporary data
+
+---
+
+# Storage Command Cheat Sheet
+
+| Command | Purpose |
+|----------|---------|
+| docker volume create | Create volume |
+| docker volume ls | List volumes |
+| docker volume inspect | Inspect volume |
+| docker volume rm | Remove volume |
+| docker volume prune | Remove unused volumes |
+| docker run -v | Mount volume |
+| docker run --mount | Modern mount syntax |
+
+---
+
+# Conclusion
+
+Docker provides flexible storage options:
+
+- **Volumes** → Production-grade persistent storage
+- **Bind mounts** → Development-friendly direct host mapping
+- **tmpfs** → Fast and secure temporary storage
+
+Choosing the correct storage method is essential for building scalable, secure, and reliable containerized applications.
+
+---
+
+End of File
