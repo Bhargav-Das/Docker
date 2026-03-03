@@ -3,30 +3,64 @@ layout: default
 title: Docker Swarm
 ---
 
-# Docker Swarm 
+# Docker Swarm
+
+---
 
 ## Introduction
 
-Docker Swarm is Docker’s native clustering and orchestration tool. It allows multiple Docker hosts (nodes) to work together as a single system. Swarm helps in deploying, managing, and scaling containerized applications across multiple machines.
+Docker Swarm is Docker’s native clustering and orchestration tool. It allows multiple Docker hosts (nodes) to work together as a single logical cluster.
+
+Swarm enables:
+
+- Service orchestration
+- High availability
+- Load balancing
+- Rolling updates
+- Horizontal scaling
+
+It transforms standalone Docker hosts into a distributed container platform.
 
 ---
 
-## Key Concepts
+# Swarm Architecture
 
-- **Node**: A machine participating in the swarm (manager or worker)  
-- **Manager Node**: Controls the cluster and schedules tasks  
-- **Worker Node**: Executes the tasks assigned by the manager  
-- **Service**: Defines how containers should run (replicas, image, ports)  
-- **Task**: A running container that is part of a service  
-- **Overlay Network**: Enables communication between containers across nodes  
+Docker Swarm follows a manager-worker architecture.
+
+### Components
+
+- **Node** → A machine participating in the swarm  
+- **Manager Node** → Maintains cluster state and schedules tasks  
+- **Worker Node** → Executes assigned tasks  
+- **Service** → Definition of container deployment  
+- **Task** → Individual running container  
+- **Overlay Network** → Enables communication across nodes  
+- **Ingress Network** → Handles load-balanced external access  
 
 ---
 
-## Environment Details
+## Raft Consensus (Cluster State Management)
+
+Manager nodes use the **Raft consensus algorithm** to maintain cluster state.
+
+Key properties:
+
+- Strong consistency
+- Leader election
+- Distributed state replication
+- Fault tolerance
+
+For production:
+
+- Always use odd number of managers (3, 5, 7)
+
+---
+
+# Environment Details
 
 | Property | Value |
 |---|---|
-| Host | Asher (WSL2 / Ubuntu) |
+| Host | DESKTOP-QK0KB4I (WSL2 / Ubuntu) |
 | Docker Engine Version | 29.2.1 |
 | Swarm Advertise Address | 172.22.216.77 |
 | Service Port | 8080 → 80 |
@@ -34,271 +68,343 @@ Docker Swarm is Docker’s native clustering and orchestration tool. It allows m
 
 ---
 
-## Step-by-Step Procedure
-
-### Initialize Docker Swarm
-
-```bash
-aryan_1234@Asher:~$ docker swarm init
-```
-
-**Output:**
-```bash
-Error response from daemon: could not choose an IP address to advertise since this system has multiple addresses on different interfaces (10.255.255.254 on lo and 172.22.216.77 on eth0)
-```
-
-**Explanation:**  
-Docker could not automatically select the correct IP address due to multiple interfaces.
+# Step-by-Step Procedure
 
 ---
 
-### Check Available IP Addresses
+## Initialize Docker Swarm
 
 ```bash
-aryan_1234@Asher:~$ ip a
+bhargav@DESKTOP-QK0KB4I:~$ docker swarm init
 ```
 
-**Output:**
+### Error Output
+
 ```bash
-# Shows all network interfaces including eth0 and docker networks
+Error response from daemon: could not choose an IP address to advertise since this system has multiple addresses on different interfaces
 ```
+
+### Explanation
+
+When multiple network interfaces exist, Docker cannot automatically determine the correct advertise IP.
 
 ---
 
-### Initialize Swarm with Specific IP
+## Check Available IP Addresses
 
 ```bash
-aryan_1234@Asher:~$ docker swarm init --advertise-addr 172.22.216.77
+bhargav@DESKTOP-QK0KB4I:~$ ip a
 ```
 
-**Output:**
-```bash
-Swarm initialized: current node (rpbqpmd5nhm34e55zy7dwz7qb) is now a manager.
-```
-
-**Explanation:**  
-The manager node is successfully created and ready to manage the cluster.
+Identify the correct interface (e.g., `eth0`) and its IP address.
 
 ---
 
-### Verify Node Status
+## Initialize Swarm with Specific IP
 
 ```bash
-aryan_1234@Asher:~$ docker node ls
+bhargav@DESKTOP-QK0KB4I:~$ docker swarm init --advertise-addr 172.22.216.77
 ```
 
-**Output:**
+### Output
+
 ```bash
-ID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
-rpbqpmd5nhm34e55zy7dwz7qb *   Asher      Ready     Active         Leader           29.2.1
+Swarm initialized: current node (...) is now a manager.
 ```
+
+The node becomes the **Leader Manager**.
 
 ---
 
-### Attempt to Join Swarm (Error Case)
+## Verify Node Status
 
 ```bash
-aryan_1234@Asher:~$ docker swarm join --token <TOKEN> <MANAGER-IP>:2377
+bhargav@DESKTOP-QK0KB4I:~$ docker node ls
 ```
 
-**Output:**
-```bash
--bash: syntax error near unexpected token `<'
-```
-
-**Explanation:**  
-Placeholders must be replaced with actual token and IP values.
-
----
-
-### Join Swarm (Already Part of Swarm)
+### Output
 
 ```bash
-aryan_1234@Asher:~$ docker swarm join --token SWMTKN-... 172.22.216.77:2377
-```
-
-**Output:**
-```bash
-Error response from daemon: This node is already part of a swarm.
+ID                            HOSTNAME              STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+rpbqpmd5nhm34e55zy7dwz7qb *   DESKTOP-QK0KB4I      Ready     Active         Leader           29.2.1
 ```
 
 ---
 
-### Create Worker Node
+## Retrieve Join Token
 
 ```bash
-aryan_1234@Asher:~$ docker run -d --privileged --name worker1 docker:dind
+bhargav@DESKTOP-QK0KB4I:~$ docker swarm join-token worker
 ```
 
-**Output:**
-```bash
-# Container ID displayed
-```
+Displays worker join command.
 
 ---
 
-### Enter Worker Container
+## Create Worker Node (Using Docker-in-Docker)
 
 ```bash
-aryan_1234@Asher:~$ docker exec -it worker1 sh
+bhargav@DESKTOP-QK0KB4I:~$ docker run -d --privileged --name worker1 docker:dind
 ```
 
-**Output:**
+Enter container:
+
 ```bash
-/ #
+bhargav@DESKTOP-QK0KB4I:~$ docker exec -it worker1 sh
 ```
 
----
-
-### Join Worker to Swarm
+Join swarm:
 
 ```bash
 / # docker swarm join --token SWMTKN-... 172.22.216.77:2377
 ```
 
-**Output:**
+---
+
+## Verify All Nodes
+
 ```bash
-This node joined a swarm as a worker.
+bhargav@DESKTOP-QK0KB4I:~$ docker node ls
 ```
+
+You should see both manager and worker.
 
 ---
 
-### Verify Nodes
+# Create Service
 
 ```bash
-aryan_1234@Asher:~$ docker node ls
-```
-
-**Output:**
-```bash
-ID                            HOSTNAME       STATUS    AVAILABILITY   MANAGER STATUS
-wlbfk0fre8qy7l8l6rg6ygh89     worker1        Ready     Active
-rpbqpmd5nhm34e55zy7dwz7qb *   Asher          Ready     Active         Leader
-```
-
----
-
-### Create Service
-
-```bash
-aryan_1234@Asher:~$ docker service create \
+bhargav@DESKTOP-QK0KB4I:~$ docker service create \
   --name webapp \
   --replicas 3 \
   -p 8080:80 \
   nginx
 ```
 
-**Output:**
-```bash
-eefcgssqr6tdjtxv6b9hqa9uz
-overall progress: 3 out of 3 tasks
-```
+### What Happens Internally
 
-**Explanation:**  
-Creates a service with 3 replicas. Swarm ensures all replicas remain running.
+- Swarm creates 3 tasks
+- Tasks distributed across nodes
+- Ingress routing mesh enabled
+- Load balancing activated
 
 ---
 
-### List Services
+## Routing Mesh
 
-```bash
-aryan_1234@Asher:~$ docker service ls
-```
+Docker Swarm automatically enables **routing mesh**, meaning:
 
-**Output:**
-```bash
-ID             NAME      MODE         REPLICAS   IMAGE          PORTS
-eefcgssqr6td   webapp    replicated   3/3        nginx:latest   *:8080->80/tcp
-```
+- Every node listens on published port
+- Traffic routed to available containers
+- Built-in load balancing
 
 ---
 
-### Inspect Tasks
+## List Services
 
 ```bash
-aryan_1234@Asher:~$ docker service ps webapp
-```
-
-**Output:**
-```bash
-# Shows container distribution across nodes
+bhargav@DESKTOP-QK0KB4I:~$ docker service ls
 ```
 
 ---
 
-### Inspect Service
+## Inspect Tasks
 
 ```bash
-aryan_1234@Asher:~$ docker service inspect webapp
+bhargav@DESKTOP-QK0KB4I:~$ docker service ps webapp
 ```
 
-**Output:**
+Shows distribution across nodes.
+
+---
+
+## Inspect Service Configuration
+
 ```bash
-# Detailed JSON configuration
+bhargav@DESKTOP-QK0KB4I:~$ docker service inspect webapp
+```
+
+Displays full JSON configuration.
+
+---
+
+# Scaling Service
+
+```bash
+bhargav@DESKTOP-QK0KB4I:~$ docker service scale webapp=6
+```
+
+Swarm automatically schedules new tasks.
+
+---
+
+# Service Deployment Modes
+
+| Mode | Description |
+|------|------------|
+| Replicated | Runs defined number of replicas |
+| Global | Runs one container per node |
+
+Example (global):
+
+```bash
+docker service create --mode global nginx
 ```
 
 ---
 
-### Scale Service
+# Rolling Update
 
 ```bash
-aryan_1234@Asher:~$ docker service scale webapp=6
-```
-
-**Output:**
-```bash
-webapp scaled to 6
-overall progress: 6 out of 6 tasks
-```
-
-**Explanation:**  
-Scaling increases the number of running containers without downtime.
-
----
-
-### Remove Service
-
-```bash
-aryan_1234@Asher:~$ docker service rm webapp
-```
-
-**Output:**
-```bash
-webapp
-```
-
----
-
-### Rolling Update
-
-```bash
-aryan_1234@Asher:~$ docker service update \
+bhargav@DESKTOP-QK0KB4I:~$ docker service update \
   --image nginx:latest \
   --update-parallelism 1 \
   --update-delay 10s \
-  app
+  webapp
 ```
 
-**Output:**
+This updates containers gradually to avoid downtime.
+
+---
+
+# Remove Service
+
 ```bash
-# Rolling update in progress
+bhargav@DESKTOP-QK0KB4I:~$ docker service rm webapp
 ```
 
-**Explanation:**  
-Containers are updated one by one to avoid downtime.
+---
+
+# Node Availability Management
+
+Drain a node:
+
+```bash
+docker node update --availability drain worker1
+```
+
+Active mode:
+
+```bash
+docker node update --availability active worker1
+```
 
 ---
 
-## Advantages of Docker Swarm
+# Leave Swarm
 
-- Easy to set up compared to other orchestration tools  
-- Built-in load balancing  
-- Supports scaling and rolling updates  
-- High availability with multiple nodes  
-- Native Docker integration  
+Worker:
+
+```bash
+docker swarm leave
+```
+
+Manager:
+
+```bash
+docker swarm leave --force
+```
 
 ---
 
-## Conclusion
+# Troubleshooting Swarm
 
-Docker Swarm simplifies container orchestration by managing multiple nodes as a single system. It ensures application availability, scalability, and efficient resource utilization.
+Check swarm status:
+
+```bash
+docker info | grep Swarm
+```
+
+Restart Docker:
+
+```bash
+sudo systemctl restart docker
+```
+
+Check logs:
+
+```bash
+journalctl -u docker
+```
+
+---
+
+# Swarm Networking
+
+Swarm automatically creates:
+
+- ingress network
+- docker_gwbridge
+- overlay networks
+
+Create custom overlay:
+
+```bash
+docker network create --driver overlay my_overlay
+```
+
+---
+
+# Advantages of Docker Swarm
+
+- Native Docker integration
+- Easy setup
+- Automatic load balancing
+- Built-in service discovery
+- Rolling updates
+- Horizontal scaling
+- Self-healing containers
+
+---
+
+# Limitations
+
+- Less powerful than Kubernetes
+- Smaller ecosystem
+- Limited advanced scheduling policies
+
+---
+
+# Best Practices
+
+- Use multiple manager nodes in production
+- Use overlay networks
+- Enable TLS security
+- Monitor service health
+- Avoid single-manager production setups
+- Regularly backup swarm state
+
+---
+
+# Command Cheat Sheet
+
+| Command | Purpose |
+|----------|---------|
+| docker swarm init | Initialize swarm |
+| docker node ls | List nodes |
+| docker service create | Create service |
+| docker service ls | List services |
+| docker service ps | Inspect tasks |
+| docker service scale | Scale service |
+| docker service update | Rolling update |
+| docker service rm | Remove service |
+| docker swarm leave | Leave swarm |
+
+---
+
+# Conclusion
+
+Docker Swarm provides a simple yet powerful orchestration platform for managing distributed containerized applications.
+
+It ensures:
+
+- High availability
+- Automatic scaling
+- Load balancing
+- Efficient resource utilization
+
+Swarm is ideal for small-to-medium scale distributed deployments and is tightly integrated with the Docker ecosystem.
+
+---
+
+End of File
