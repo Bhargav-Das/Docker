@@ -9,11 +9,15 @@ title: Docker Compose
 
 Docker Compose is used to define and manage applications that require multiple containers. Instead of running containers one by one, everything is described in a single YAML file (`docker-compose.yml`) and started together.
 
-### Docker Run
+Docker Compose follows a **declarative configuration model**, meaning you define the desired state once, and Docker ensures it runs as defined.
 
-`docker run` is used to launch a single container. All configurations like ports, volumes, environment variables, etc., must be provided manually every time.
+---
 
-Example:
+## Docker Run
+
+`docker run` is used to launch a single container. All configurations like ports, volumes, environment variables, restart policies, and networking must be provided manually every time.
+
+### Example
 
 ```bash
 docker run -d \
@@ -25,9 +29,18 @@ docker run -d \
   nginx:alpine
 ```
 
-### Docker Compose
+### Limitations of docker run
 
-Docker Compose follows a declarative approach where you define the configuration once in a file.
+- Manual configuration each time  
+- Difficult to manage multi-container applications  
+- Hard to scale  
+- No centralized configuration file  
+
+---
+
+## Docker Compose
+
+Docker Compose allows you to define multiple services in a YAML file and manage them with a single command.
 
 ```yaml
 version: 3.8
@@ -45,6 +58,12 @@ services:
     restart: unless-stopped
 ```
 
+Start with:
+
+```bash
+docker compose up -d
+```
+
 ---
 
 ## Advantages of Docker Compose
@@ -55,6 +74,8 @@ services:
 - Built-in lifecycle management  
 - Supports dependency handling  
 - Allows scaling of services  
+- Automatic network creation  
+- Cleaner DevOps workflow  
 
 ---
 
@@ -64,7 +85,7 @@ services:
 |-----------|------------------|--------|
 | -p 8080:80 | ports | Port mapping |
 | -v ./data:/app | volumes | Storage |
-| -e KEY=value | environment | Env variables |
+| -e KEY=value | environment | Environment variables |
 | --name app | container_name | Naming |
 | --network net | networks | Networking |
 | --restart always | restart | Restart policy |
@@ -76,9 +97,13 @@ services:
 
 ---
 
-## 2. Practical: WordPress + MySQL
+# 2. Practical: WordPress + MySQL
 
-### docker-compose.yml
+This example demonstrates deploying a WordPress application connected to a MySQL database using Docker Compose.
+
+---
+
+## docker-compose.yml
 
 ```yaml
 version: '3.8'
@@ -124,43 +149,54 @@ networks:
 
 ---
 
-## Commands
+## Explanation of Configuration
 
-### Create File
+- `services` → Defines application containers  
+- `volumes` → Ensures persistent data storage  
+- `networks` → Enables communication between services  
+- `depends_on` → Controls startup order  
+
+Docker automatically creates the network and connects both containers.
+
+---
+
+# Commands
+
+## Create File
 
 ```bash
-nano docker-compose.yml
+bhargav@DESKTOP-QK0KB4I:/mnt/d/ccvt/sem 6/devops$ nano docker-compose.yml
 ```
 
 ---
 
-### Start Containers
+## Start Containers
 
 ```bash
-docker compose up -d
+bhargav@DESKTOP-QK0KB4I:/mnt/d/ccvt/sem 6/devops$ docker compose up -d
 ```
 
 ---
 
-### Stop and Remove
+## Stop and Remove
 
 ```bash
-docker compose down
+bhargav@DESKTOP-QK0KB4I:/mnt/d/ccvt/sem 6/devops$ docker compose down
 ```
 
 ---
 
-### Scale Service
+## Scale Service
 
 ```bash
-docker compose up --scale wordpress=3 -d
+bhargav@DESKTOP-QK0KB4I:/mnt/d/ccvt/sem 6/devops$ docker compose up --scale wordpress=3 -d
 ```
 
 ---
 
-## Port Conflict Issue
+# Port Conflict Issue
 
-Error occurs when a port is already in use:
+If port 8080 is already in use:
 
 ```
 failed to bind host port 8080
@@ -168,12 +204,23 @@ failed to bind host port 8080
 
 ### Fix
 
-- Change port (e.g., 9090:80)  
-- OR stop conflicting service  
+- Change port mapping (e.g., 9090:80)  
+- Stop conflicting service using that port  
+- Check running services:
+
+```bash
+sudo lsof -i :8080
+```
 
 ---
 
-## Access Application
+# Access Application
+
+```
+http://localhost:8080
+```
+
+If port changed:
 
 ```
 http://localhost:9090
@@ -181,92 +228,46 @@ http://localhost:9090
 
 ---
 
-## 3. Docker Compose Commands Cheat Sheet
+# Scaling Issue Explanation
 
-| Command | Description |
-|--------|------------|
-| docker compose up -d | Start services |
-| docker compose down | Stop & remove |
-| docker compose logs -f | View logs |
-| docker compose ps | List containers |
-| docker compose restart | Restart services |
-| docker compose exec svc bash | Open shell |
-| docker compose pull | Download images |
-| docker compose build | Build images |
-| docker compose stop | Stop containers |
+If you use:
+
+```yaml
+container_name: wordpress
+```
+
+Scaling will fail because container names must be unique.
+
+### Warning Example
+
+```bash
+WARNING: The "wordpress" service is using the custom container name "wordpress".
+Docker requires each container to have a unique name.
+```
+
+### Solution
+
+Remove `container_name` from the service definition.
 
 ---
 
-## WSL Command Execution
+# Tear Down
 
 ```bash
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ nano docker-compose.yml
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose up -d
-WARN[0000] /mnt/d/ccvt/sem 6/devops/docker-compose.yml: the attribute `version` is obsolete, it will be ignored
-Error: failed to bind port 8080
+bhargav@DESKTOP-QK0KB4I:/mnt/d/ccvt/sem 6/devops$ docker compose down
 ```
 
-```bash
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose down
-```
+Expected Output:
 
 ```bash
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose up -d
-```
-
-```bash
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose up --scale wordpress=3 -d
-WARNING: container name conflict
-```
-
-```bash
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose down
-```
-## Attempt Service Scaling
-
-```bash
-docker compose up --scale wordpress=3 -d
-```
-
-**Command Description:**  
-This command tries to create multiple instances (replicas) of a service. It is commonly used for scaling applications for load handling or testing distributed setups.
-
----
-
-### Warning Observed
-
-```bash
-docker compose up --scale wordpress=3 -d
-WARN[0000] /mnt/d/ccvt/sem 6/devops/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
-[+] up 1/1
- ✔ Container mysql Running                                              0.0s
-WARNING: The "wordpress" service is using the custom container name "wordpress". Docker requires each container to have a unique name. Remove the custom name to scale the service
-```
-
-**Explanation:**  
-The issue occurs because the `container_name: wordpress` field forces all replicas to use the same name. Since container names must be unique, Docker cannot create multiple instances.  
-To fix this, remove the `container_name` field so Docker can auto-generate unique names.
-
----
-
-## Tear Down
-
-```bash
-docker compose down
-```
-
-This command stops and removes all containers, networks, and related resources created by the compose file.
-
-**Expected Output:**
-```bash
-✔ Container wordpress Removed 1.5s
-✔ Container mysql Removed 1.8s
-✔ Network devops_wordpress-network Removed 0.3s
+✔ Container wordpress Removed
+✔ Container mysql Removed
+✔ Network devops_wordpress-network Removed
 ```
 
 ---
 
-## Docker Compose CLI Cheat Sheet
+# Docker Compose CLI Cheat Sheet
 
 | Command | Description |
 |--------|------------|
@@ -283,44 +284,58 @@ This command stops and removes all containers, networks, and related resources c
 
 ---
 
-## WSL Command Execution
+# Additional Best Practices
 
-```bash
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ nano docker-compose.yml
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose up -d
-WARN[0000] /mnt/d/ccvt/sem 6/devops/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
-[+] up 3/3
- ✔ Network devops_wordpress-network Created                             0.1s
- ✔ Container mysql                  Created                             0.2s
- ✔ Container wordpress              Created                             0.1s
-Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint wordpress (426628fa36705fa2a82e5b8ec5b3cc75293e1500dd2d2ccc1caa2d259ff2a041): failed to bind host port 0.0.0.0:8080/tcp: address already in use
+- Always specify image versions in production  
+- Use `.env` file for sensitive credentials  
+- Avoid using `latest` tag  
+- Remove unused networks and volumes regularly  
+- Use restart policies (`restart: unless-stopped`)  
+- Use healthchecks in production  
 
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ nano docker-compose.yml
+Example Healthcheck:
 
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose down
-WARN[0000] /mnt/d/ccvt/sem 6/devops/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
-[+] down 3/3
- ✔ Container wordpress              Removed                             0.1s
- ✔ Container mysql                  Removed                             2.2s
- ✔ Network devops_wordpress-network Removed                             0.3s
-
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose up -d
-WARN[0000] /mnt/d/ccvt/sem 6/devops/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
-[+] up 3/3
- ✔ Network devops_wordpress-network Created                             0.0s
- ✔ Container mysql                  Created                             0.1s
- ✔ Container wordpress              Created                             0.1s
-
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose up --scale wordpress=3 -d
-WARN[0000] /mnt/d/ccvt/sem 6/devops/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
-[+] up 1/1
- ✔ Container mysql Running                                              0.0s
-WARNING: The "wordpress" service is using the custom container name "wordpress". Docker requires each container to have a unique name. Remove the custom name to scale the service
-
-aryan_1234@Asher:/mnt/d/ccvt/sem 6/devops$ docker compose down
-WARN[0000] /mnt/d/ccvt/sem 6/devops/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
-[+] down 3/3
- ✔ Container wordpress              Removed                             1.5s
- ✔ Container mysql                  Removed                             1.8s
- ✔ Network devops_wordpress-network Removed                             0.3s
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
 ```
+
+---
+
+# Using .env File
+
+Create `.env` file:
+
+```
+MYSQL_ROOT_PASSWORD=secret
+MYSQL_USER=wpuser
+MYSQL_PASSWORD=wppass
+```
+
+Then reference inside compose:
+
+```yaml
+environment:
+  MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+```
+
+---
+
+# Summary
+
+Docker Compose simplifies multi-container application deployment by:
+
+- Centralizing configuration  
+- Automating networking  
+- Managing dependencies  
+- Supporting scaling  
+- Improving DevOps workflows  
+
+It is highly recommended for local development, staging, and production environments.
+
+---
+
+End of File
